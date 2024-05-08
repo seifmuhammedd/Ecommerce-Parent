@@ -1,0 +1,46 @@
+
+services:
+  sqlserver-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      MSSQL_SA_PASSWORD: "YourStrong!Password"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    networks:
+      - backend
+
+  userauth-service:
+    build:
+      context: ./userauth
+      dockerfile: Dockerfile
+    ports:
+      - "5000:8081"
+    depends_on:
+      - sqlserver-db
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:sqlserver://sqlserver-db:1433;databaseName=UserAuth;integratedSecurity=false;trustServerCertificate=true;"
+      SPRING_DATASOURCE_USERNAME: "sa"
+      SPRING_DATASOURCE_PASSWORD: "YourStrong!Password"
+      SPRING_DATASOURCE_DRIVERCLASSNAME: "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+      SPRING_JPA_HIBERNATE_DDL_AUTO: "update"
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.SQLServer2016Dialect"
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+      SPRING_LIQUIBASE_CHANGE_LOG: "classpath:db/changelog/changelog-master.xml"
+      LOGGING_LEVEL_ROOT: "INFO"
+      LOGGING_FILE_NAME: "logs/myapp.log"
+    networks:
+      - backend
+
+volumes:
+  sql_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: path/to/sqlserver/data
+      o: bind
+
+
+networks:
+  backend:
